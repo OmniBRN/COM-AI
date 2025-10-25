@@ -94,57 +94,186 @@ const App: FC = () => {
 </header>
 
       {/* Hero Section */}
-      <main className="text-center mt-24 max-w-2xl transition-colors duration-500">
-        <h2
-          className={`text-5xl font-bold leading-tight mb-6 transition-colors duration-500 ${
-            darkMode ? "text-white" : "text-gray-800"
-          }`}
-        >
-          Build experiences that{" "}
-          <span
-            className={`transition-colors duration-500 ${
-              darkMode ? "text-indigo-400" : "text-indigo-600"
-            }`}
-          >
-            delight
-          </span>
-        </h2>
-        <p
-          className={`text-lg mb-8 transition-colors duration-500 ${
-            darkMode ? "text-gray-300" : "text-gray-600"
-          }`}
-        >
-          Launch your next project with React, Vite, and TailwindCSS — fast,
-          modern, and delightful by default.
-        </p>
-
-        <div className="flex flex-wrap justify-center gap-4">
-          <a
-            className="px-6 py-3 text-white bg-indigo-600 rounded-lg shadow hover:bg-indigo-700 transition-all duration-200"
-          >
-            Get Started
-          </a>
-          <a
-            href="#"
-            className={`px-6 py-3 border rounded-lg transition-all duration-200 
-              ${darkMode 
-                ? "text-indigo-400 border-indigo-400 hover:bg-indigo-950"
-                : "text-indigo-600 border-indigo-600 hover:bg-indigo-50"}
-            `}
-          >
-            Learn More
-          </a>
-        </div>
-      </main>
-
-      <footer
-        className={`absolute bottom-4 text-sm transition-colors duration-500 ${
-          darkMode ? "text-gray-400" : "text-gray-500"
+<main
+  className={`pt-24 pb-16 px-6 min-h-screen w-full transition-colors duration-500 
+    ${darkMode ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-800"}
+  `}
+>
+  {/* Wider container but same content inside */}
+  <div className="mx-auto w-full max-w-[1400px] space-y-12 px-4 sm:px-8">
+    {/* Overview Header */}
+    <section>
+      <h2 className="text-3xl font-bold mb-2">Statistici Tranzactii POS</h2>
+      <p
+        className={`text-sm ${
+          darkMode ? "text-gray-400" : "text-gray-600"
         }`}
       >
-        © {new Date().getFullYear()} Fraud.COM. No rights reserved.
-      </footer>
-    </div>
+        Grafice si Statistici Referitoare la Tranzactii Frauduloase Detectate
+      </p>
+    </section>
+
+    {/* Stat Cards */}
+    <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {["Users", "Transactions", "Revenue", "Performance"].map((title) => (
+        <div
+          key={title}
+          className={`p-6 rounded-xl shadow-sm border 
+            transition-colors duration-300
+            ${
+              darkMode
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white border-gray-200"
+            }
+          `}
+        >
+          <h3 className="text-lg font-semibold mb-3">{title}</h3>
+          <div
+            className={`text-4xl font-bold mb-2 ${
+              darkMode ? "text-indigo-300" : "text-indigo-600"
+            }`}
+          >
+            0
+          </div>
+          <div
+            className={`h-2 rounded-full ${
+              darkMode ? "bg-gray-700" : "bg-gray-200"
+            }`}
+          >
+            <div
+              className={`h-2 rounded-full w-1/3 ${
+                darkMode ? "bg-indigo-400" : "bg-indigo-500"
+              }`}
+            ></div>
+          </div>
+        </div>
+      ))}
+    </section>
+
+    {/* Placeholder Graphs */}
+    <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Line Graph Placeholder */}
+      <div
+        className={`p-6 rounded-xl h-72 flex flex-col border justify-center items-center 
+          ${
+            darkMode
+              ? "bg-gray-800 border-gray-700 text-gray-400"
+              : "bg-white border-gray-200 text-gray-500"
+          }
+        `}
+      >
+        <span className="text-center text-sm mb-2 font-semibold">
+          Traffic Overview (Line Chart Placeholder)
+        </span>
+        <div
+          className={`w-full h-48 rounded-md ${
+            darkMode ? "bg-gray-700" : "bg-gray-100"
+          } flex items-center justify-center`}
+        >
+          <span className="italic opacity-60">[Graph Area]</span>
+        </div>
+      </div>
+
+      {/* Bar Graph Placeholder */}
+      <div
+        className={`p-6 rounded-xl h-72 flex flex-col border justify-center items-center 
+          ${
+            darkMode
+              ? "bg-gray-800 border-gray-700 text-gray-400"
+              : "bg-white border-gray-200 text-gray-500"
+          }
+        `}
+      >
+        <span className="text-center text-sm mb-2 font-semibold">
+          Conversion Rates (Bar Chart Placeholder)
+        </span>
+        <div
+          className={`w-full h-48 rounded-md ${
+            darkMode ? "bg-gray-700" : "bg-gray-100"
+          } flex items-center justify-center`}
+        >
+          <span className="italic opacity-60">[Graph Area]</span>
+        </div>
+      </div>
+    </section>
+
+    {/* Placeholder Table */}
+    <section>
+      <div
+        className={`p-6 rounded-xl border overflow-auto 
+          ${
+            darkMode
+              ? "bg-gray-800 border-gray-700 text-gray-300"
+              : "bg-white border-gray-200 text-gray-700"
+          }
+        `}
+      >
+        <h3 className="text-lg font-semibold mb-4">Recent Records</h3>
+        <table className="min-w-full text-sm border-collapse">
+          <thead>
+            <tr
+              className={`font-semibold text-left ${
+                darkMode ? "text-indigo-300" : "text-indigo-600"
+              }`}
+            >
+              <th className="py-2 px-3">ID</th>
+              <th className="py-2 px-3">Category</th>
+              <th className="py-2 px-3">Status</th>
+              <th className="py-2 px-3">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...Array(5)].map((_, i) => (
+              <tr
+                key={i}
+                className={`border-t ${
+                  darkMode ? "border-gray-700" : "border-gray-200"
+                }`}
+              >
+                <td className="py-2 px-3">#{1000 + i}</td>
+                <td className="py-2 px-3">Placeholder {i + 1}</td>
+                <td className="py-2 px-3">
+                  {i % 2 === 0 ? (
+                    <span
+                      className={`px-2 py-1 rounded-md text-xs font-medium ${
+                        darkMode
+                          ? "bg-green-800/60 text-green-300"
+                          : "bg-green-100 text-green-700"
+                      }`}
+                    >
+                      Active
+                    </span>
+                  ) : (
+                    <span
+                      className={`px-2 py-1 rounded-md text-xs font-medium ${
+                        darkMode
+                          ? "bg-red-800/60 text-red-300"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      Pending
+                    </span>
+                  )}
+                </td>
+                <td className="py-2 px-3">${(i + 1) * 100}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+
+ <footer
+      className={`w-full text-center py-4 text-sm border-t
+        ${darkMode ? "border-gray-700 text-gray-400" : "border-gray-200 text-gray-500"}
+      `}
+    >
+      © {new Date().getFullYear()} <span className="font-semibold">Fraud.COM</span>. All
+      rights reserved.
+    </footer>
+  </div>
   );
 };
 

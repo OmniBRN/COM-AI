@@ -1,7 +1,9 @@
+import uuid
 from fastapi import FastAPI
 from sqlalchemy import create_engine, select, Integer, String, Boolean, CHAR, Date, Sequence, Text, Float, Uuid
 from sqlalchemy.orm import Session, DeclarativeBase, Mapped, mapped_column
 from datetime import date
+from pydantic import BaseModel
 import json
 
 # Makes objected resulted from sqlalchemy statement execution into a dictionary
@@ -41,6 +43,26 @@ class POS_LOG(Base):
     merch_long: Mapped[float] = mapped_column(Float, nullable=False)
     is_fraud: Mapped[bool] = mapped_column(Boolean, nullable=False) 
 
+class TransactionCreate(BaseModel):
+    transaction_id : uuid.UUID
+    first: str
+    last: str
+    gender: str
+    state: str
+    lat: float
+    long: float
+    job: str
+    dob: date
+    trans_date: date
+    unix_time: int
+    category: str
+    amt: float
+    merchant: str
+    merch_lat: float
+    merch_long: float
+    is_fraud: bool
+
+
 
 app = FastAPI()
 database_url = "postgresql://dvloperhackdb:dvloperdbpass@0.0.0.0/dvloperhackdb"
@@ -53,3 +75,30 @@ async def get_transactions():
         data = [model_to_dict(o) for o in objs]
     return data
         
+@app.post("/addTransaction")
+async def add_transaction(transaction: TransactionCreate):
+    with Session(engine) as session:
+        new_transaction = POS_LOG(
+            transaction_id = transaction.transaction_id,
+            first=transaction.first,
+            last=transaction.last,
+            gender=transaction.gender,
+            state=transaction.state,
+            lat=transaction.lat,
+            long=transaction.long,
+            job=transaction.job,
+            dob=transaction.dob,
+            trans_date=transaction.trans_date,
+            unix_time=transaction.unix_time,
+            category=transaction.category,
+            amt=transaction.amt,
+            merchant=transaction.merchant,
+            merch_lat=transaction.merch_lat,
+            merch_long=transaction.merch_long,
+            is_fraud=transaction.is_fraud
+        )
+        session.add(new_transaction)
+        session.commit()
+        session.refresh(new_transaction)
+        return model_to_dict(new_transaction)
+

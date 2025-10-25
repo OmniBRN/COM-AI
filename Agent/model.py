@@ -219,22 +219,21 @@ class RandomForest:
             self.trees.append(tree)
 
     def predict(self, X):
-        # collect predictions from each tree
-        all_preds = np.vstack([t.predict(X) for t in self.trees])  # shape (n_trees, n_samples)
-        # majority vote
-        preds = []
-        for col in all_preds.T:
-            counts = np.bincount(col)
-            preds.append(np.argmax(counts))
-        return np.array(preds)
+        n_samples = len(X)
+        votes = [Counter() for _ in range(n_samples)]
 
-if __name__ == "__main__":
+        for t in self.trees:
+            preds = t.predict(X)
+            for i, p in enumerate(preds):
+                votes[i][p] += 1
+
+        final_preds = np.array([v.most_common(1)[0][0] for v in votes])
+        return final_preds
+year= datetime.now().year
+def train(train_file):    
     
-    true_train_file= "test.csv"
-    train_file= "hackathon_train.csv"
     train_data=[]
     train_labels= []
-    year= datetime.now().year
     with open(train_file, "r") as fin:
         first= fin.readline().strip().split('|')
         for line in fin:
@@ -245,41 +244,62 @@ if __name__ == "__main__":
                 dictionary[type]= line[i]
 
             train_labels.append(int(dictionary["is_fraud"]))
-            train_data.append((haversine(float(dictionary["lat"]), float(dictionary["long"]), float(dictionary["merch_lat"]), float(dictionary["merch_long"])), dictionary["gender"], year- int(dictionary["dob"][:4]), int(dictionary["unix_time"])% 8640, dictionary["category"], float(dictionary["amt"])))
-    
-    df = pd.DataFrame(train_data, columns=["distance", "gender", "age", "time", "category", "amount"])
-
+            train_data.append((haversine(float(dictionary["lat"]), float(dictionary["long"]), float(dictionary["merch_lat"]), float(dictionary["merch_long"])), dictionary["gender"], year- int(dictionary["dob"][:4]), int(dictionary["unix_time"])% 8640, dictionary["category"], float(dictionary["amt"]), dictionary["merchant"]))
+    value= int(0.8*len(train_data))
+    verification_data= train_data[value:]
+    verification_labels= train_labels[value:]
+    train_labels= train_labels[:value]
+    train_data= train_data[:value]
+    train_df = pd.DataFrame(train_data, columns=["distance", "gender", "age", "time", "category", "amount", "merchant"])
+    verification_df= pd.DataFrame(verification_data, columns=["distance", "gender", "age", "time", "category", "amount", "merchant"])
     # we will keep categorical columns as raw strings and tell tree they are categorical
-    feature_cols = ["distance", "gender", "age","time", "category", "amount"]
-    feature_types = ["numeric", "categorical", "numeric","numeric", "categorical", "numeric"]
+    feature_cols = ["distance", "gender", "age","time", "category", "amount", "merchant"]
+    feature_types = ["numeric", "categorical", "numeric","numeric", "categorical", "numeric", "categorical"]
     # Convert DataFrame to numpy array (object dtype for categorical values)
-    X = df[feature_cols].values
-    y = np.array(train_labels, dtype=int)
-
+    X_train = train_df[feature_cols].values
+    y_train = np.array(train_labels, dtype=int)
+    X_verification = verification_df[feature_cols].values
+    y_verification = np.array(verification_labels, dtype=int)
 
     # Train random forest
     rf = RandomForest(n_trees=5, max_depth=4, min_samples_split=1, max_features=3, random_state=42)
-    rf.fit(X, y, feature_types)
-    data= []
-    data_labels= []
-    with open(true_train_file, "r") as fin:
-        first= fin.readline().strip().split('|')
-        for line in fin:
+    rf.fit(X_train, y_train, feature_types)
+    preds= rf.predict(X_verification)
+    max_acc= (preds== verification_labels).mean() 
+    print(max_acc)
+    for _ in range(10):
+        num_trees= random.randint(3, 15)
+        max_depth= random.randint(3, 12)
+        min_split= random.randint(1, 10)
+        max_feat= random.choice([ 2, 3, 4])
+        seed= random.randint(0, 1000)
+        nrf= RandomForest(n_trees= num_trees, max_depth= max_depth, min_samples_split= min_split, max_features= max_feat, random_state= seed)
+        nrf.fit(X_verification, y_verification, feature_types)
+        preds= nrf.predict(X_verification)
+        acc= (preds== verification_labels).mean()
+        if(acc> max_acc):
+            max_acc= acc
+            rf= nrf
+            print("acc= "+str(acc) + " num_trees= "+ str(num_trees)+ " max_depth= "+ str(max_depth)+ " min_split= "+ str(min_split)+ " max_feat= "+ str(max_feat)+ " seed= "+ str(seed))
+    return rf
 
-            line= line.strip().split('|')
-            dictionary= {}
-            for i, type in enumerate(first):
-                dictionary[type]= line[i]
-
-            data_labels.append(int(dictionary["is_fraud"]))
-            data.append((haversine(float(dictionary["lat"]), float(dictionary["long"]), float(dictionary["merch_lat"]), float(dictionary["merch_long"])), dictionary["gender"], year- int(dictionary["dob"][:4]), int(dictionary["unix_time"])% 8640, dictionary["category"], float(dictionary["amt"])))
-    # Predict on training set
-    df_new= pd.DataFrame(data, columns=["distance", "gender", "age", "time", "category", "amount"])
-    X_new= df_new.values
-    preds = rf.predict(X_new)
-    print("y_true:", data_labels)
-    print("y_pred:", preds)
-    acc = (preds== data_labels).mean()
-    print("train accuracy:", acc)
-    
-    
+rf= train("hack.csv")
+true_train_file= "test.csv"
+data= []
+data_labels= []
+with open(true_train_file, "r") as fin:
+    first= fin.readline().strip().split('|')
+    for line in fin:
+        line= line.strip().split('|')
+        dictionary= {}
+        for i, type in enumerate(first):
+            dictionary[type]= line[i]
+        data_labels.append(int(dictionary["is_fraud"]))
+        data.append((haversine(float(dictionary["lat"]), float(dictionary["long"]), float(dictionary["merch_lat"]), float(dictionary["merch_long"])), dictionary["gender"], year- int(dictionary["dob"][:4]), int(dictionary["unix_time"])% 8640, dictionary["category"], float(dictionary["amt"]), dictionary["merchant"]))
+# Predict on training set
+df_new= pd.DataFrame(data, columns=["distance", "gender", "age", "time", "category", "amount", "merchant"])
+feature_cols = ["distance", "gender", "age","time", "category", "amount", "merchant"]
+X_new= df_new[feature_cols].values
+preds = rf.predict(X_new)
+acc = (preds== data_labels).mean()
+print("test accuracy:", acc)

@@ -1,0 +1,19 @@
+CREATE TABLE public."POS_LOG" (
+  "transaction-id" uuid PRIMARY KEY,
+  first           text        NOT NULL,
+  last            text        NOT NULL,
+  gender          char(1)     NOT NULL,
+  state           text        NOT NULL,
+  lat             real        NOT NULL,
+  "long"          real        NOT NULL,
+  job             text        NOT NULL,
+  dob             date        NOT NULL,
+  "trans-date"    date        NOT NULL,
+  unix_time       integer     NOT NULL,
+  category        text        NOT NULL,
+  amt             real        NOT NULL,
+  merchant        text        NOT NULL,
+  merch_lat       real        NOT NULL,
+  merch_long       real        NOT NULL,
+  is_fraud        boolean     NOT NULL
+)

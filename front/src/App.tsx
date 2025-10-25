@@ -22,99 +22,75 @@ const App: FC = () => {
         ${darkMode ? "bg-gray-900" : "bg-white"}
       `}
     >
-      {/* Navigation */}
-      <nav
-        className={`fixed top-0 left-0 w-full flex justify-between items-center px-8 py-5 transition-colors duration-500
-          border-b backdrop-blur-sm 
-          ${darkMode ? "bg-gray-900/80 border-gray-700" : "bg-white/80 border-gray-200"}
-        `}
+<header
+  className={`fixed top-0 left-0 w-full h-14 flex items-center border-b z-10
+    transition-colors duration-500 overflow-hidden
+    ${darkMode ? "bg-gray-900/80 border-gray-700" : "bg-white/80 border-gray-200"}
+  `}
+>
+  {/* Scrolling Banner */}
+  <div className="relative w-full h-full overflow-hidden scroll-fade">
+    <div
+      className={`absolute top-1/2 -translate-y-1/2 flex animate-[froStream_25s_linear_infinite]
+        ${darkMode ? "text-indigo-400" : "text-indigo-600"}
+        text-3xl font-extrabold uppercase tracking-widest select-none
+      `}
+    >
+      {[...Array(30)].map((_, i) => (
+        <span key={i} className="mx-8">
+          fraud_COM
+        </span>
+      ))}
+    </div>
+  </div>
+
+  {/* Theme Switcher */}
+  <button
+    onClick={() => setDarkMode((prev) => !prev)}
+    className={`absolute right-6 top-1/2 -translate-y-1/2 p-2 rounded-md transition duration-200 
+      ${darkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-indigo-100 hover:bg-indigo-200"}
+    `}
+    aria-label="Toggle dark mode"
+  >
+    {darkMode ? (
+      // Sun icon
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-5 h-5 text-yellow-400"
+        fill="currentColor"
+        viewBox="0 0 20 20"
       >
-        <h1
-          className={`text-2xl font-bold transition-colors duration-500 ${
-            darkMode ? "text-indigo-400" : "text-indigo-600"
-          }`}
-        >
-          MyApp
-        </h1>
-
-        <ul
-          className={`flex items-center space-x-6 font-medium transition-colors duration-500 ${
-            darkMode ? "text-gray-300" : "text-gray-700"
-          }`}
-        >
-          <li>
-            <a
-              href="#"
-              className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200`}
-            >
-              Home
-            </a>
-          </li>
-          <li>
-            <a
-              href="#features"
-              className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200`}
-            >
-              Features
-            </a>
-          </li>
-          <li>
-            <a
-              href="#contact"
-              className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200`}
-            >
-              Contact
-            </a>
-          </li>
-        </ul>
-
-        {/* Theme Toggle Button */}
-        <button
-          onClick={() => setDarkMode((prev) => !prev)}
-          className={`ml-6 p-2 rounded-md transition duration-200 
-            ${darkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-indigo-100 hover:bg-indigo-200"}
-          `}
-          aria-label="Toggle dark mode"
-        >
-          {darkMode ? (
-            // ☀️ Sun
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5 text-yellow-400"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-            </svg>
-          ) : (
-            // 🌙 Moon
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5 text-indigo-600"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 16a1 1 0 011 1v1a1 1 0 11-2 
-                0v-1a1 1 0 011-1zm4.22-2.22a1 1 0 
-                011.42 1.42l-.71.7a1 1 0 
-                11-1.42-1.42l.71-.7zm1.78-3.78a1 1 0 
-                110 2h-1a1 1 0 110-2h1zM10 4a1 1 0 
-                01-1-1V2a1 1 0 112 0v1a1 1 0 
-                01-1 1zM5.78 5.78a1 1 0 011.42 0l.71.7a1 1 0 
-                01-1.42 1.42l-.71-.7a1 1 0 
-                010-1.42zM4 10a1 1 0 110 2H3a1 1 0 
-                110-2h1zm2.22 4.22a1 1 0 
-                011.42 1.42l-.7.71a1 1 0 
-                01-1.42-1.42l.7-.71zm3.78-1.22a3 
-                3 0 110-6 3 3 0 010 6z"
-                clipRule="evenodd"
-              />
-            </svg>
-          )}
-        </button>
-      </nav>
+        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+      </svg>
+    ) : (
+      // Moon icon
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-5 h-5 text-indigo-600"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+      >
+        <path
+          fillRule="evenodd"
+          d="M10 16a1 1 0 011 1v1a1 1 0 11-2 
+          0v-1a1 1 0 011-1zm4.22-2.22a1 1 0 
+          011.42 1.42l-.71.7a1 1 0 
+          11-1.42-1.42l.71-.7zm1.78-3.78a1 1 0 
+          110 2h-1a1 1 0 110-2h1zM10 4a1 1 0 
+          01-1-1V2a1 1 0 112 0v1a1 1 0 
+          01-1 1zM5.78 5.78a1 1 0 011.42 0l.71.7a1 1 0 
+          01-1.42 1.42l-.71-.7a1 1 0 
+          010-1.42zM4 10a1 1 0 110 2H3a1 1 0 
+          110-2h1zm2.22 4.22a1 1 0 
+          011.42 1.42l-.7.71a1 1 0 
+          01-1.42-1.42l.7-.71zm3.78-1.22a3 
+          3 0 110-6 3 3 0 010 6z"
+          clipRule="evenodd"
+        />
+      </svg>
+    )}
+  </button>
+</header>
 
       {/* Hero Section */}
       <main className="text-center mt-24 max-w-2xl transition-colors duration-500">
@@ -143,7 +119,6 @@ const App: FC = () => {
 
         <div className="flex flex-wrap justify-center gap-4">
           <a
-            href="#"
             className="px-6 py-3 text-white bg-indigo-600 rounded-lg shadow hover:bg-indigo-700 transition-all duration-200"
           >
             Get Started
@@ -166,7 +141,7 @@ const App: FC = () => {
           darkMode ? "text-gray-400" : "text-gray-500"
         }`}
       >
-        © {new Date().getFullYear()} MyApp. All rights reserved.
+        © {new Date().getFullYear()} Fraud.COM. No rights reserved.
       </footer>
     </div>
   );

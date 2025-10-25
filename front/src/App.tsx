@@ -22,6 +22,7 @@ const App: FC = () => {
         ${darkMode ? "bg-gray-900" : "bg-white"}
       `}
     >
+{/* Continuous Scrolling fraud_com Header */}
 <header
   className={`fixed top-0 left-0 w-full h-14 flex items-center border-b z-10
     transition-colors duration-500 overflow-hidden
@@ -32,13 +33,13 @@ const App: FC = () => {
   <div className="relative w-full h-full overflow-hidden scroll-fade">
     <div
       className={`absolute top-1/2 -translate-y-1/2 flex animate-[froStream_25s_linear_infinite]
-        ${darkMode ? "text-indigo-400" : "text-indigo-600"}
+        ${darkMode ? "text-white" : "text-indigo-600"}
         text-3xl font-extrabold uppercase tracking-widest select-none
       `}
     >
       {[...Array(30)].map((_, i) => (
         <span key={i} className="mx-8">
-          fraud_COM
+          fraud_com
         </span>
       ))}
     </div>

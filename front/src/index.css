@@ -7,6 +7,11 @@
     transform: translateX(-50%);
   }
 }
+html,
+body {
+  height: 100%;
+  background-color: #0f1624; /* same as bg-gray-900 tone */
+}
 
 /* Optional fade on edges for polish */
 .scroll-fade {

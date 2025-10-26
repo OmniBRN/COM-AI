@@ -189,6 +189,11 @@ class DecisionTree:
 
     def predict(self, X):
         return np.array([self._predict_one(row, self.tree_) for row in X])
+    
+    def clear(self):
+        """Free memory used by the tree."""
+        self.tree_ = None
+        self.feature_types = None
 
 # ---------- Random Forest ----------
 class RandomForest:
@@ -231,6 +236,12 @@ class RandomForest:
 
         final_preds = np.array([v.most_common(1)[0][0] for v in votes])
         return final_preds
+    def clear(self):
+        """Explicitly free memory used by trees."""
+        for t in self.trees:
+            if hasattr(t, "clear"):
+                t.clear()
+        self.trees.clear()
 year= datetime.now().year
 def train(train_file):    
     
@@ -271,24 +282,30 @@ def train(train_file):
     preds= rf.predict(X_valid)
     max_acc= (preds== y_valid).mean() 
     print(max_acc)
-    for _ in range(10):
-        num_trees= random.randint(3, 15)
-        max_depth= random.randint(3, 12)
-        min_split= random.randint(1, 10)
+    for i in range(10):
+        num_trees= random.randint(3, 10)
+        max_depth= random.randint(3, 10)
+        min_split= random.randint(1, 5)
         max_feat= random.choice([ 2, 3, 4])
-        seed= random.randint(0, 1000)
+        seed= random.randint(0, 500)
         nrf= RandomForest(n_trees= num_trees, max_depth= max_depth, min_samples_split= min_split, max_features= max_feat, random_state= seed)
         nrf.fit(X_train, y_train, feature_types)
         preds= nrf.predict(X_valid)
         acc= (preds== y_valid).mean()
         if(acc> max_acc):
             max_acc= acc
+            rf.clear()
+            del rf
             rf= nrf
             print("acc= "+str(acc) + " num_trees= "+ str(num_trees)+ " max_depth= "+ str(max_depth)+ " min_split= "+ str(min_split)+ " max_feat= "+ str(max_feat)+ " seed= "+ str(seed))
+        else:
+            nrf.clear()
+            del nrf
+        print("Finished "+str(i)+"th version of the Random Forest.")
     print("Ended training!")
     return rf
 
-rf= train("hack.csv")
+rf= train("hackathon_train.csv")
 with open("RandomForest_custom.pkl", "wb") as f:
     pickle.dump(rf, f)
 true_train_file= "test.csv"

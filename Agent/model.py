@@ -4,6 +4,8 @@ from collections import Counter
 import random
 import math
 from datetime import datetime
+import pickle
+from sklearn.utils import shuffle
 
 def gini(v):
     if len(v)==0:
@@ -108,7 +110,7 @@ class DecisionTree:
                         best_right_idx = right_idx
                         best_is_cat_ordering = None
 
-            else:  # categorical
+            else:
                 # transform categories into ordering by target mean, then treat as numeric
                 categories = np.unique(col)
                 if len(categories) == 1:
@@ -245,27 +247,29 @@ def train(train_file):
 
             train_labels.append(int(dictionary["is_fraud"]))
             train_data.append((haversine(float(dictionary["lat"]), float(dictionary["long"]), float(dictionary["merch_lat"]), float(dictionary["merch_long"])), dictionary["gender"], year- int(dictionary["dob"][:4]), int(dictionary["unix_time"])% 8640, dictionary["category"], float(dictionary["amt"]), dictionary["merchant"]))
-    value= int(0.8*len(train_data))
-    verification_data= train_data[value:]
-    verification_labels= train_labels[value:]
-    train_labels= train_labels[:value]
-    train_data= train_data[:value]
+
     train_df = pd.DataFrame(train_data, columns=["distance", "gender", "age", "time", "category", "amount", "merchant"])
-    verification_df= pd.DataFrame(verification_data, columns=["distance", "gender", "age", "time", "category", "amount", "merchant"])
-    # we will keep categorical columns as raw strings and tell tree they are categorical
+    train_df["label"] = train_labels
+
+    # Shuffle everything and split
+    train_df = shuffle(train_df, random_state=42).reset_index(drop=True)
+    split_idx = int(0.8 * len(train_df))
+    train_part = train_df.iloc[:split_idx]
+    valid_part = train_df.iloc[split_idx:]
+
+    X_train = train_part.drop("label", axis=1).values
+    y_train = train_part["label"].values
+    X_valid = valid_part.drop("label", axis=1).values
+    y_valid = valid_part["label"].values
+
     feature_cols = ["distance", "gender", "age","time", "category", "amount", "merchant"]
     feature_types = ["numeric", "categorical", "numeric","numeric", "categorical", "numeric", "categorical"]
-    # Convert DataFrame to numpy array (object dtype for categorical values)
-    X_train = train_df[feature_cols].values
-    y_train = np.array(train_labels, dtype=int)
-    X_verification = verification_df[feature_cols].values
-    y_verification = np.array(verification_labels, dtype=int)
 
     # Train random forest
     rf = RandomForest(n_trees=5, max_depth=4, min_samples_split=1, max_features=3, random_state=42)
     rf.fit(X_train, y_train, feature_types)
-    preds= rf.predict(X_verification)
-    max_acc= (preds== verification_labels).mean() 
+    preds= rf.predict(X_valid)
+    max_acc= (preds== y_valid).mean() 
     print(max_acc)
     for _ in range(10):
         num_trees= random.randint(3, 15)
@@ -274,16 +278,19 @@ def train(train_file):
         max_feat= random.choice([ 2, 3, 4])
         seed= random.randint(0, 1000)
         nrf= RandomForest(n_trees= num_trees, max_depth= max_depth, min_samples_split= min_split, max_features= max_feat, random_state= seed)
-        nrf.fit(X_verification, y_verification, feature_types)
-        preds= nrf.predict(X_verification)
-        acc= (preds== verification_labels).mean()
+        nrf.fit(X_train, y_train, feature_types)
+        preds= nrf.predict(X_valid)
+        acc= (preds== y_valid).mean()
         if(acc> max_acc):
             max_acc= acc
             rf= nrf
             print("acc= "+str(acc) + " num_trees= "+ str(num_trees)+ " max_depth= "+ str(max_depth)+ " min_split= "+ str(min_split)+ " max_feat= "+ str(max_feat)+ " seed= "+ str(seed))
+    print("Ended training!")
     return rf
 
 rf= train("hack.csv")
+with open("RandomForest_custom.pkl", "wb") as f:
+    pickle.dump(rf, f)
 true_train_file= "test.csv"
 data= []
 data_labels= []
@@ -296,7 +303,7 @@ with open(true_train_file, "r") as fin:
             dictionary[type]= line[i]
         data_labels.append(int(dictionary["is_fraud"]))
         data.append((haversine(float(dictionary["lat"]), float(dictionary["long"]), float(dictionary["merch_lat"]), float(dictionary["merch_long"])), dictionary["gender"], year- int(dictionary["dob"][:4]), int(dictionary["unix_time"])% 8640, dictionary["category"], float(dictionary["amt"]), dictionary["merchant"]))
-# Predict on training set
+# Predict on test set
 df_new= pd.DataFrame(data, columns=["distance", "gender", "age", "time", "category", "amount", "merchant"])
 feature_cols = ["distance", "gender", "age","time", "category", "amount", "merchant"]
 X_new= df_new[feature_cols].values

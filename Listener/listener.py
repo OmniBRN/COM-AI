@@ -13,6 +13,7 @@ from Agent.model import RandomForest, haversine, DecisionTree, train  # import y
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+
 # ---------------- CONFIG ----------------
 API_KEY = "e562bf7c02a774b00bab775bdcfa4d494cf503b2128fb04a6872822783e5b04d"
 STREAM_URL = "https://95.217.75.14:8443/stream"
@@ -37,7 +38,37 @@ else:
         rf = pickle.load(fin)
     print("[+] Model loaded successfully.")
 
-# ---------------- TRANSACTION HANDLING ----------------
+def filter_transaction(json_data,is_fraud):
+    """
+    Takes a transaction JSON and returns a JSON matching the POS_LOG table columns.
+    """
+    url = "http://127.0.0.1:8000/post/addTransaction"
+    is_fraud_bool = False
+    if is_fraud == 1:
+        is_fraud_bool = True
+    filtered = {
+        "transaction_id": json_data.get("transaction_id"),
+        "first": json_data.get("first"),
+        "last": json_data.get("last"),
+        "gender": json_data.get("gender"),
+        "state": json_data.get("state"),
+        "lat": float(json_data.get("lat", 0)) if json_data.get("lat") else None,
+        "long": float(json_data.get("long", 0)) if json_data.get("long") else None,
+        "job": json_data.get("job"),
+        "dob": json_data.get("dob"),
+        "trans_date": json_data.get("trans_date"),
+        "unix_time": int(json_data.get("unix_time", 0)) if json_data.get("unix_time") else None,
+        "category": json_data.get("category"),
+        "amt": float(json_data.get("amt", 0)) if json_data.get("amt") else None,
+        "merchant": json_data.get("merchant"),
+        "merch_lat": float(json_data.get("merch_lat", 0)) if json_data.get("merch_lat") else None,
+        "merch_long": float(json_data.get("merch_long", 0)) if json_data.get("merch_long") else None,
+        "is_fraud": is_fraud_bool  # leave empty or set later
+
+    }
+    requests.post(url,json=filtered)
+
+# ---------------)- TRANSACTION HANDLING ----------------
 def flag_transaction(trans_num, flag_value):
     """Send prediction result back to the API."""
     try:
@@ -88,6 +119,9 @@ def process_transaction(transaction):
         # Predict
         prediction = rf.predict(vector)
         is_fraud = int(prediction[0])
+        print("Sending to DataBase\n")
+        filter_transaction(transaction,is_fraud)
+
         print(f"Predicted fraud: {is_fraud}")
 
         # Send flag
@@ -117,6 +151,7 @@ def main():
                 if event.data:
                     try:
                         transaction = json.loads(event.data)
+                        print(f"AICI{transaction}")
                         trans_num = transaction.get("trans_num")
                         print(f"Received transaction: {trans_num}")
 

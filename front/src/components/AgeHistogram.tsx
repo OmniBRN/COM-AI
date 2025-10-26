@@ -16,31 +16,50 @@ const AgeHistogram: FC<Props> = ({ darkMode }) => {
   const [data, setData] = useState<AgeDatum[]>([]);
   const [fade, setFade] = useState(false);
 
-  // 🧠 function you’ll later replace with your API call
+  // 🧠 Fetch live data from backend
   const fetchData = async () => {
-    setFade(true);
-    await new Promise((r) => setTimeout(r, 250)); // fade‑out delay
-    const dummy = [
-      18, 23, 28, 35, 42, 50, 60,
-    ].map((a) => ({
-      age: a,
-      count: Math.floor(Math.random() * 60 + 5),
-    }));
-    setData(dummy);
-    setFade(false);
+    try {
+      setFade(true);
+      await new Promise((r) => setTimeout(r, 200)); // small fade delay
+
+      const res = await fetch("/api/getFirstNAges/");
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const result = await res.json();
+
+      /**
+       * Assuming backend returns something like:
+       * [
+       *   { "age": 18, "count": 12 },
+       *   { "age": 23, "count": 30 },
+       *   ...
+       * ]
+       */
+      const formatted: AgeDatum[] = result.map((d: any) => ({
+        age: +d.age,
+        count: +d.count,
+      }));
+
+      setData(formatted);
+    } catch (err) {
+      console.error("Failed to load age data:", err);
+    } finally {
+      setFade(false);
+    }
   };
 
+  // Initial + recurring refresh
   useEffect(() => {
     fetchData();
-    const id = setInterval(fetchData, 60_000); // refresh every minute
+    const id = setInterval(fetchData, 60_000); // every minute
     return () => clearInterval(id);
   }, []);
 
+  // D3 render logic
   useEffect(() => {
     if (!ref.current || data.length === 0) return;
 
     const svgNode = d3.select(ref.current);
-    svgNode.selectAll("*").remove(); // clear prior rendering
+    svgNode.selectAll("*").remove();
 
     const container = ref.current.parentElement;
     const width = container ? container.clientWidth - 40 : 500;
@@ -53,6 +72,7 @@ const AgeHistogram: FC<Props> = ({ darkMode }) => {
       .attr("height", height)
       .attr("preserveAspectRatio", "xMidYMid meet");
 
+    // Scales
     const x = d3
       .scaleBand<number>()
       .domain(data.map((d) => d.age))
@@ -68,59 +88,58 @@ const AgeHistogram: FC<Props> = ({ darkMode }) => {
     const barColor = darkMode ? "#818CF8" : "#4F46E5";
     const barHover = darkMode ? "#A5B4FC" : "#6366F1";
 
-    // Bars group
-const bars = svg
-  .append("g")
-  .selectAll("rect")
-  .data(data)
-  .join("rect")
-  .attr("x", (d) => x(d.age)!)
-  .attr("width", x.bandwidth())
-  .attr("rx", 4)
-  .attr("fill", barColor)
-  // Start from baseline
-  .attr("y", y(0))
-  .attr("height", 0);
+    // Create bars
+    const bars = svg
+      .append("g")
+      .selectAll("rect")
+      .data(data)
+      .join("rect")
+      .attr("x", (d) => x(d.age)!)
+      .attr("width", x.bandwidth())
+      .attr("rx", 4)
+      .attr("fill", barColor)
+      .attr("y", y(0))
+      .attr("height", 0);
 
-// Animation
-bars
-  .transition()
-  .duration(700)
-  .ease(d3.easeCubicOut)
-  .attr("y", (d) => y(d.count))
-  .attr("height", (d) => y(0) - y(d.count));
+    bars
+      .transition()
+      .duration(700)
+      .ease(d3.easeCubicOut)
+      .attr("y", (d) => y(d.count))
+      .attr("height", (d) => y(0) - y(d.count));
 
-// Tooltip
-const tooltip = d3
-  .select("body")
-  .append("div")
-  .attr(
-    "class",
-    "absolute text-xs bg-gray-900 text-white px-2 py-1 rounded opacity-0 pointer-events-none"
-  )
-  .style("position", "absolute")
-  .style("z-index", "10");
+    // Tooltip — single instance
+    d3.select(".age-tooltip").remove();
+    const tooltip = d3
+      .select("body")
+      .append("div")
+      .attr(
+        "class",
+        "age-tooltip absolute text-xs bg-gray-900 text-white px-2 py-1 rounded opacity-0 pointer-events-none"
+      )
+      .style("position", "absolute")
+      .style("z-index", "10");
 
-bars
-  .on("mouseover", function (e, d) {
-    d3.select(this).attr("fill", barHover);
-    tooltip
-      .style("opacity", 1)
-      .text(`${d.count} cazuri la ${d.age} ani`)
-      .style("left", e.pageX + "px")
-      .style("top", e.pageY - 28 + "px");
-  })
-  .on("mousemove", function (e) {
-    tooltip
-      .style("left", e.pageX + "px")
-      .style("top", e.pageY - 28 + "px");
-  })
-  .on("mouseout", function () {
-    d3.select(this).attr("fill", barColor);
-    tooltip.style("opacity", 0);
-  });
+    bars
+      .on("mouseover", function (e, d) {
+        d3.select(this).attr("fill", barHover);
+        tooltip
+          .style("opacity", 1)
+          .text(`${d.count} tranzacții la ${d.age} ani`)
+          .style("left", e.pageX + "px")
+          .style("top", e.pageY - 28 + "px");
+      })
+      .on("mousemove", function (e) {
+        tooltip
+          .style("left", e.pageX + "px")
+          .style("top", e.pageY - 28 + "px");
+      })
+      .on("mouseout", function () {
+        d3.select(this).attr("fill", barColor);
+        tooltip.style("opacity", 0);
+      });
 
-    // axes
+    // Axes
     svg
       .append("g")
       .attr("transform", `translate(0,${height - m.bottom})`)
@@ -138,7 +157,6 @@ bars
       .selectAll("text")
       .style("font-size", "11px");
 
-    // axis labels
     svg
       .append("text")
       .attr("x", width / 2)

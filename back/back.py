@@ -1,5 +1,6 @@
 import uuid
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, select, Integer, String, Boolean, CHAR, Date, Sequence, Text, Float, Uuid, func, desc, text, extract, case
 from sqlalchemy.orm import Session, DeclarativeBase, Mapped, mapped_column
 from datetime import date
@@ -76,6 +77,18 @@ class TransactionCreate(BaseModel):
     is_fraud: bool
 
 app = FastAPI()
+origins = [
+    "http://localhost:5173/",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:41494"    
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials = True,
+    allow_methods = ["*"],
+    allow_headers = ["*"]
+)
 database_url = "postgresql://dvloperhackdb:dvloperdbpass@0.0.0.0/dvloperhackdb"
 engine = create_engine(database_url)
 
@@ -130,8 +143,8 @@ async def get_first_N_mostFradulousStates(n: int):
     response = [{"state": state, "occurrences": count} for state, count in result]
     return response
 
-@app.get("/api/getFirstNAges/{n}")
-async def get_first_N_ages(n: int):
+@app.get("/api/getFirstNAges/")
+async def get_first_N_ages():
     with Session(engine) as session:
         stmt = (
         select(
@@ -141,7 +154,7 @@ async def get_first_N_ages(n: int):
             func.count().label("count")
         )
         .group_by("age")
-        .order_by("age").limit(n)
+        .order_by("age")
         )
         result = session.execute(stmt).all()
     response = [{"age": age, "count": count} for age, count in result]

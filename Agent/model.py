@@ -4,6 +4,8 @@ from collections import Counter
 import random
 import math
 from datetime import datetime
+import pickle
+from sklearn.utils import shuffle
 
 def gini(v):
     if len(v)==0:
@@ -108,7 +110,7 @@ class DecisionTree:
                         best_right_idx = right_idx
                         best_is_cat_ordering = None
 
-            else:  # categorical
+            else:
                 # transform categories into ordering by target mean, then treat as numeric
                 categories = np.unique(col)
                 if len(categories) == 1:
@@ -187,6 +189,11 @@ class DecisionTree:
 
     def predict(self, X):
         return np.array([self._predict_one(row, self.tree_) for row in X])
+    
+    def clear(self):
+        """Free memory used by the tree."""
+        self.tree_ = None
+        self.feature_types = None
 
 # ---------- Random Forest ----------
 class RandomForest:
@@ -219,22 +226,27 @@ class RandomForest:
             self.trees.append(tree)
 
     def predict(self, X):
-        # collect predictions from each tree
-        all_preds = np.vstack([t.predict(X) for t in self.trees])  # shape (n_trees, n_samples)
-        # majority vote
-        preds = []
-        for col in all_preds.T:
-            counts = np.bincount(col)
-            preds.append(np.argmax(counts))
-        return np.array(preds)
+        n_samples = len(X)
+        votes = [Counter() for _ in range(n_samples)]
 
-if __name__ == "__main__":
+        for t in self.trees:
+            preds = t.predict(X)
+            for i, p in enumerate(preds):
+                votes[i][p] += 1
+
+        final_preds = np.array([v.most_common(1)[0][0] for v in votes])
+        return final_preds
+    def clear(self):
+        """Explicitly free memory used by trees."""
+        for t in self.trees:
+            if hasattr(t, "clear"):
+                t.clear()
+        self.trees.clear()
+year= datetime.now().year
+def train(train_file):    
     
-    true_train_file= "test.csv"
-    train_file= "hackathon_train.csv"
     train_data=[]
     train_labels= []
-    year= datetime.now().year
     with open(train_file, "r") as fin:
         first= fin.readline().strip().split('|')
         for line in fin:
@@ -245,41 +257,51 @@ if __name__ == "__main__":
                 dictionary[type]= line[i]
 
             train_labels.append(int(dictionary["is_fraud"]))
-            train_data.append((haversine(float(dictionary["lat"]), float(dictionary["long"]), float(dictionary["merch_lat"]), float(dictionary["merch_long"])), dictionary["gender"], year- int(dictionary["dob"][:4]), int(dictionary["unix_time"])% 8640, dictionary["category"], float(dictionary["amt"])))
-    
-    df = pd.DataFrame(train_data, columns=["distance", "gender", "age", "time", "category", "amount"])
+            train_data.append((haversine(float(dictionary["lat"]), float(dictionary["long"]), float(dictionary["merch_lat"]), float(dictionary["merch_long"])), dictionary["gender"], year- int(dictionary["dob"][:4]), int(dictionary["unix_time"])% 8640, dictionary["category"], float(dictionary["amt"]), dictionary["merchant"]))
 
-    # we will keep categorical columns as raw strings and tell tree they are categorical
-    feature_cols = ["distance", "gender", "age","time", "category", "amount"]
-    feature_types = ["numeric", "categorical", "numeric","numeric", "categorical", "numeric"]
-    # Convert DataFrame to numpy array (object dtype for categorical values)
-    X = df[feature_cols].values
-    y = np.array(train_labels, dtype=int)
+    train_df = pd.DataFrame(train_data, columns=["distance", "gender", "age", "time", "category", "amount", "merchant"])
+    train_df["label"] = train_labels
 
+    # Shuffle everything and split
+    train_df = shuffle(train_df, random_state=42).reset_index(drop=True)
+    split_idx = int(0.8 * len(train_df))
+    train_part = train_df.iloc[:split_idx]
+    valid_part = train_df.iloc[split_idx:]
+
+    X_train = train_part.drop("label", axis=1).values
+    y_train = train_part["label"].values
+    X_valid = valid_part.drop("label", axis=1).values
+    y_valid = valid_part["label"].values
+
+    feature_cols = ["distance", "gender", "age","time", "category", "amount", "merchant"]
+    feature_types = ["numeric", "categorical", "numeric","numeric", "categorical", "numeric", "categorical"]
 
     # Train random forest
     rf = RandomForest(n_trees=5, max_depth=4, min_samples_split=1, max_features=3, random_state=42)
-    rf.fit(X, y, feature_types)
-    data= []
-    data_labels= []
-    with open(true_train_file, "r") as fin:
-        first= fin.readline().strip().split('|')
-        for line in fin:
+    rf.fit(X_train, y_train, feature_types)
+    preds= rf.predict(X_valid)
+    max_acc= (preds== y_valid).mean() 
+    print(max_acc)
+    for i in range(10):
+        num_trees= random.randint(3, 10)
+        max_depth= random.randint(3, 10)
+        min_split= random.randint(1, 5)
+        max_feat= random.choice([ 2, 3, 4])
+        seed= random.randint(0, 500)
+        nrf= RandomForest(n_trees= num_trees, max_depth= max_depth, min_samples_split= min_split, max_features= max_feat, random_state= seed)
+        nrf.fit(X_train, y_train, feature_types)
+        preds= nrf.predict(X_valid)
+        acc= (preds== y_valid).mean()
+        if(acc> max_acc):
+            max_acc= acc
+            rf.clear()
+            del rf
+            rf= nrf
+            print("acc= "+str(acc) + " num_trees= "+ str(num_trees)+ " max_depth= "+ str(max_depth)+ " min_split= "+ str(min_split)+ " max_feat= "+ str(max_feat)+ " seed= "+ str(seed))
+        else:
+            nrf.clear()
+            del nrf
+        print("Finished "+str(i)+"th version of the Random Forest.")
+    print("Ended training!")
+    return rf
 
-            line= line.strip().split('|')
-            dictionary= {}
-            for i, type in enumerate(first):
-                dictionary[type]= line[i]
-
-            data_labels.append(int(dictionary["is_fraud"]))
-            data.append((haversine(float(dictionary["lat"]), float(dictionary["long"]), float(dictionary["merch_lat"]), float(dictionary["merch_long"])), dictionary["gender"], year- int(dictionary["dob"][:4]), int(dictionary["unix_time"])% 8640, dictionary["category"], float(dictionary["amt"])))
-    # Predict on training set
-    df_new= pd.DataFrame(data, columns=["distance", "gender", "age", "time", "category", "amount"])
-    X_new= df_new.values
-    preds = rf.predict(X_new)
-    print("y_true:", data_labels)
-    print("y_pred:", preds)
-    acc = (preds== data_labels).mean()
-    print("train accuracy:", acc)
-    
-    

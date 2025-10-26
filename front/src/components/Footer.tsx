@@ -4,20 +4,11 @@ interface Props {
   darkMode: boolean;
 }
 
-const Footer: FC<Props> = ({ darkMode }) => {
+const Footer: FC<Props> = () => {
   return (
-    <footer
-      className={`w-full text-center py-4 text-sm border-t
-        ${
-          darkMode
-            ? "border-gray-700 text-gray-400"
-            : "border-gray-200 text-gray-500"
-        }
-      `}
-    >
-      © {new Date().getFullYear()}{" "}
-      <span className="font-semibold">Fraud.COM</span>. All rights reserved.
-    </footer>
+   <footer className="mt-auto py-4 text-center text-sm border-t border-gray-700 text-gray-500">
+  © {new Date().getFullYear()} Fraud.COM — No Rights Reserved
+  </footer>
   );
 };
 

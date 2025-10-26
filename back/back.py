@@ -79,14 +79,14 @@ app = FastAPI()
 database_url = "postgresql://dvloperhackdb:dvloperdbpass@0.0.0.0/dvloperhackdb"
 engine = create_engine(database_url)
 
-@app.get("/transactions")
+@app.get("/api/transactions")
 async def get_transactions():
     with Session(engine) as session:
         objs = session.scalars(select(POS_LOG)).all()
         data = [model_to_dict(o) for o in objs]
     return data
 
-@app.get("/transactions/{n}")
+@app.get("/api/transactions/{n}")
 async def get_transactions_n(n:int):
     with Session(engine) as session:
         stmt = select(POS_LOG).order_by(text("ctid DESC")).limit(n) 
@@ -94,62 +94,35 @@ async def get_transactions_n(n:int):
         return [simplify_transaction(model_to_dict(o)) for o in result]
 
         
-@app.post("/addTransaction")
-async def add_transaction(transaction: TransactionCreate):
-    with Session(engine) as session:
-        new_transaction = POS_LOG(
-            transaction_id = transaction.transaction_id,
-            first=transaction.first,
-            last=transaction.last,
-            gender=transaction.gender,
-            state=transaction.state,
-            lat=transaction.lat,
-            long=transaction.long,
-            job=transaction.job,
-            dob=transaction.dob,
-            trans_date=transaction.trans_date,
-            unix_time=transaction.unix_time,
-            category=transaction.category,
-            amt=transaction.amt,
-            merchant=transaction.merchant,
-            merch_lat=transaction.merch_lat,
-            merch_long=transaction.merch_long,
-            is_fraud=transaction.is_fraud
-        )
-        session.add(new_transaction)
-        session.commit()
-        session.refresh(new_transaction)
-        return model_to_dict(new_transaction)
-
-@app.get("/numberOfTransactions")
+@app.get("/api/numberOfTransactions")
 async def get_number_transactions():
     with Session(engine) as session:
         stmt = select(func.count()).select_from(POS_LOG)
         total_transactions = session.scalar(stmt)
     return {"total_transactions": total_transactions}
 
-@app.get("/numberOfCleanTransactions")
+@app.get("/api/numberOfCleanTransactions")
 async def get_number_transactions():
     with Session(engine) as session:
         stmt = select(func.count()).select_from(POS_LOG).where(POS_LOG.is_fraud == False)
         total_clean_transactions = session.scalar(stmt)
     return {"total_clean_transactions": total_clean_transactions}
 
-@app.get("/numberOfFraudulentTransactions")
+@app.get("/api/numberOfFraudulentTransactions")
 async def get_number_transactions():
     with Session(engine) as session:
         stmt = select(func.count()).select_from(POS_LOG).where(POS_LOG.is_fraud == True)
         total_fraudulent_transactions = session.scalar(stmt)
     return {"total_fraudulent_transactions": total_fraudulent_transactions}
 
-@app.get("/numberOfDollarsStolen")
+@app.get("/api/numberOfDollarsStolen")
 async def get_number_of_money_stolen():
     with Session(engine) as session:
         stmt = select(func.sum(POS_LOG.amt)).where(POS_LOG.is_fraud.is_(True))
         number_of_money_stolen = session.scalar(stmt)
     return {"number_of_money_stolen": number_of_money_stolen}
 
-@app.get("/getFirstNMostFradulousStates/{n}")
+@app.get("/api/getFirstNMostFradulousStates/{n}")
 async def get_first_N_mostFradulousStates(n: int):
     with Session(engine) as session:
         stmt =  (select(POS_LOG.state, func.count().label("occurrences")).group_by(POS_LOG.state).order_by(desc("occurrences"))).limit(n)
@@ -157,7 +130,7 @@ async def get_first_N_mostFradulousStates(n: int):
     response = [{"state": state, "occurrences": count} for state, count in result]
     return response
 
-@app.get("/getFirstNAges/{n}")
+@app.get("/api/getFirstNAges/{n}")
 async def get_first_N_ages(n: int):
     with Session(engine) as session:
         stmt = (
@@ -174,7 +147,7 @@ async def get_first_N_ages(n: int):
     response = [{"age": age, "count": count} for age, count in result]
     return response
 
-@app.get("/getSortedFraudulentMerchants/{n}")
+@app.get("/api/getSortedFraudulentMerchants/{n}")
 async def get_sorted_fraudulent_merchants(n:int):
     with Session(engine) as session:
         fraud_count = func.sum(
@@ -209,3 +182,29 @@ async def get_sorted_fraudulent_merchants(n:int):
         for merchant, total, fraud, rate in results
     ]
     
+@app.post("/post/addTransaction")
+async def add_transaction(transaction: TransactionCreate):
+    with Session(engine) as session:
+        new_transaction = POS_LOG(
+            transaction_id = transaction.transaction_id,
+            first=transaction.first,
+            last=transaction.last,
+            gender=transaction.gender,
+            state=transaction.state,
+            lat=transaction.lat,
+            long=transaction.long,
+            job=transaction.job,
+            dob=transaction.dob,
+            trans_date=transaction.trans_date,
+            unix_time=transaction.unix_time,
+            category=transaction.category,
+            amt=transaction.amt,
+            merchant=transaction.merchant,
+            merch_lat=transaction.merch_lat,
+            merch_long=transaction.merch_long,
+            is_fraud=transaction.is_fraud
+        )
+        session.add(new_transaction)
+        session.commit()
+        session.refresh(new_transaction)
+        return model_to_dict(new_transaction)

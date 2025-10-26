@@ -7,8 +7,9 @@ from datetime import datetime
 import math
 import pandas as pd
 import numpy as np
+import pickle
 
-from Agent.model import RandomForest, haversine  # import your class and function
+from Agent.model import RandomForest, haversine, DecisionTree  # import your class and function
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -57,8 +58,12 @@ def train_rf_model(csv_file):
 
 
 # Train the model at startup
-
-
+nr= int(input("Write if you want to use an already trained model or train a new one."))
+if nr==1:
+    rf = train_rf_model("test.csv")
+else:
+    with open("/home/radu/COM-AI/Listener/RandomForest_custom.pkl", "rb") as fin:
+        rf=pickle.load(fin)
 # ---------------- TRANSACTION HANDLING ----------------
 def flag_transaction(trans_num, flag_value):
     try:
@@ -106,6 +111,7 @@ def process_transaction(transaction):
 
     # Flag transaction
     result = flag_transaction(trans_num, is_fraud)
+    print(f"Flag response: {result}")
     print("-" * 80)
 
 # ---------------- STREAM LISTENER ----------------
@@ -144,5 +150,5 @@ def main():
             print(f"Unexpected error: {e}")
 
 if __name__ == "__main__":
-    rf = train_rf_model("test.csv")
     main()
+

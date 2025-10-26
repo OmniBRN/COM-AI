@@ -282,24 +282,3 @@ def train(train_file):
             rf= nrf
             print("acc= "+str(acc) + " num_trees= "+ str(num_trees)+ " max_depth= "+ str(max_depth)+ " min_split= "+ str(min_split)+ " max_feat= "+ str(max_feat)+ " seed= "+ str(seed))
     return rf
-
-rf= train("hack.csv")
-true_train_file= "test.csv"
-data= []
-data_labels= []
-with open(true_train_file, "r") as fin:
-    first= fin.readline().strip().split('|')
-    for line in fin:
-        line= line.strip().split('|')
-        dictionary= {}
-        for i, type in enumerate(first):
-            dictionary[type]= line[i]
-        data_labels.append(int(dictionary["is_fraud"]))
-        data.append((haversine(float(dictionary["lat"]), float(dictionary["long"]), float(dictionary["merch_lat"]), float(dictionary["merch_long"])), dictionary["gender"], year- int(dictionary["dob"][:4]), int(dictionary["unix_time"])% 8640, dictionary["category"], float(dictionary["amt"]), dictionary["merchant"]))
-# Predict on training set
-df_new= pd.DataFrame(data, columns=["distance", "gender", "age", "time", "category", "amount", "merchant"])
-feature_cols = ["distance", "gender", "age","time", "category", "amount", "merchant"]
-X_new= df_new[feature_cols].values
-preds = rf.predict(X_new)
-acc = (preds== data_labels).mean()
-print("test accuracy:", acc)

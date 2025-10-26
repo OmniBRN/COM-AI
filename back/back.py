@@ -1,6 +1,6 @@
 import uuid
 from fastapi import FastAPI
-from sqlalchemy import create_engine, select, Integer, String, Boolean, CHAR, Date, Sequence, Text, Float, Uuid, func, desc, text, extract
+from sqlalchemy import create_engine, select, Integer, String, Boolean, CHAR, Date, Sequence, Text, Float, Uuid, func, desc, text, extract, case
 from sqlalchemy.orm import Session, DeclarativeBase, Mapped, mapped_column
 from datetime import date
 from pydantic import BaseModel
@@ -9,6 +9,19 @@ import json
 # Makes objected resulted from sqlalchemy statement execution into a dictionary
 def model_to_dict(obj):
     return {c.key: getattr(obj, c.key) for c in obj.__mapper__.columns}
+
+def simplify_transaction(transaction):
+    simplified= {
+            "Transaction ID": transaction["transaction_id"],
+            "Name": f"{transaction['first']} {transaction['last']}",
+            "Gender": transaction["gender"],
+            "State": transaction["state"],
+            "Job": transaction["job"],
+            "Transaction Time": transaction["trans_date"],
+            "Amount": transaction["amt"],
+            "Is Fraud": transaction["is_fraud"],
+    }
+    return simplified
 
 class Base(DeclarativeBase):
     pass
@@ -78,7 +91,7 @@ async def get_transactions_n(n:int):
     with Session(engine) as session:
         stmt = select(POS_LOG).order_by(text("ctid DESC")).limit(n) 
         result = session.scalars(stmt).all()
-        return [model_to_dict(o) for o in result]
+        return [simplify_transaction(model_to_dict(o)) for o in result]
 
         
 @app.post("/addTransaction")
@@ -160,3 +173,39 @@ async def get_first_N_ages(n: int):
         result = session.execute(stmt).all()
     response = [{"age": age, "count": count} for age, count in result]
     return response
+
+@app.get("/getSortedFraudulentMerchants/{n}")
+async def get_sorted_fraudulent_merchants(n:int):
+    with Session(engine) as session:
+        fraud_count = func.sum(
+            case((POS_LOG.is_fraud.is_(True), 1), else_=0)
+        ).label("fraud_count")
+
+        total_transactions = func.count().label("total_transactions")
+
+        fraud_rate = (
+            (fraud_count.cast(Float) / total_transactions).label("fraud_rate")
+        )
+
+        stmt = (
+            select(
+                POS_LOG.merchant,
+                total_transactions,
+                fraud_count,
+                fraud_rate
+            )
+            .group_by(POS_LOG.merchant)
+            .order_by(desc(fraud_rate))
+        )
+
+        results = session.execute(stmt).all()
+        return [
+        {
+            "merchant": merchant,
+            "total_transactions": int(total),
+            "fraud_count": int(fraud),
+            "fraud_rate": float(rate)
+        }
+        for merchant, total, fraud, rate in results
+    ]
+    

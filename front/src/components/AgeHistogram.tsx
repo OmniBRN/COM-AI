@@ -1,5 +1,5 @@
-import type {FC} from "react"
-import {  useEffect, useRef } from "react";
+import type { FC } from "react";
+import { useEffect, useRef } from "react";
 import * as d3 from "d3";
 
 interface Props {
@@ -13,17 +13,19 @@ const AgeHistogram: FC<Props> = ({ darkMode, data }) => {
   useEffect(() => {
     if (!ref.current) return;
 
-    // Clear previous renders when data changes
     d3.select(ref.current).selectAll("*").remove();
 
-    // Dimensions
-    const width = 400;
-    const height = 200;
-    const margins = { top: 10, right: 20, bottom: 30, left: 30 };
+    // ⚙️ Compute container width dynamically
+    const container = ref.current.parentElement;
+    const width = container ? container.clientWidth - 40 : 500;
+    const height = 250;
+    const margins = { top: 10, right: 20, bottom: 45, left: 45 };
 
     const svg = d3
       .select(ref.current)
       .attr("viewBox", `0 0 ${width} ${height}`)
+      .attr("width", "100%")
+      .attr("height", height)
       .attr("preserveAspectRatio", "xMidYMid meet");
 
     // Scales
@@ -31,7 +33,7 @@ const AgeHistogram: FC<Props> = ({ darkMode, data }) => {
       .scaleBand<number>()
       .domain(data.map((d) => d.age))
       .range([margins.left, width - margins.right])
-      .padding(0.2);
+      .padding(0.25);
 
     const y = d3
       .scaleLinear()
@@ -39,62 +41,9 @@ const AgeHistogram: FC<Props> = ({ darkMode, data }) => {
       .nice()
       .range([height - margins.bottom, margins.top]);
 
-    // Bars
+    // Colors
     const barColor = darkMode ? "#818CF8" : "#4F46E5";
     const barHover = darkMode ? "#A5B4FC" : "#6366F1";
-
-    const bars = svg
-      .append("g")
-      .selectAll("rect")
-      .data(data)
-      .join("rect")
-      .attr("x", (d) => x(d.age)!)
-      .attr("y", (d) => y(d.count))
-      .attr("width", x.bandwidth())
-      .attr("height", (d) => y(0) - y(d.count))
-      .attr("rx", 3)
-      .attr("fill", barColor)
-      .on("mouseover", function (e, d) {
-        d3.select(this).attr("fill", barHover);
-        tooltip
-          .style("opacity", 1)
-          .text(`${d.count} cazuri la ${d.age} ani`)
-          .style("left", e.pageX + "px")
-          .style("top", e.pageY - 28 + "px");
-      })
-      .on("mousemove", function (e) {
-        tooltip
-          .style("left", e.pageX + "px")
-          .style("top", e.pageY - 28 + "px");
-      })
-      .on("mouseout", function () {
-        d3.select(this).attr("fill", barColor);
-        tooltip.style("opacity", 0);
-      });
-
-    // X Axis
-    svg
-      .append("g")
-      .attr("transform", `translate(0,${height - margins.bottom})`)
-      .call(
-        d3
-          .axisBottom(x)
-          .tickSizeOuter(0)
-          .tickFormat((d) => `${d}a`) as any
-      )
-      .attr("color", darkMode ? "#9CA3AF" : "#4B5563")
-      .selectAll("text")
-      .style("font-size", "10px");
-
-    // Y Axis (light grid lines)
-    svg
-      .append("g")
-      .attr("transform", `translate(${margins.left},0)`)
-      .call(d3.axisLeft(y).ticks(4))
-      .call((g) => g.select(".domain").remove())
-      .attr("color", darkMode ? "#9CA3AF" : "#4B5563")
-      .selectAll("text")
-      .style("font-size", "10px");
 
     // Tooltip
     const tooltip = d3
@@ -106,11 +55,91 @@ const AgeHistogram: FC<Props> = ({ darkMode, data }) => {
       )
       .style("position", "absolute")
       .style("z-index", "10");
+
+    // Bars
+    svg
+      .append("g")
+      .selectAll("rect")
+      .data(data)
+      .join("rect")
+      .attr("x", (d) => x(d.age)!)
+      .attr("width", x.bandwidth())
+      .attr("fill", barColor)
+      .attr("rx", 4)
+      .attr("y", y(0))
+      .attr("height", 0)
+      .transition()
+      .duration(800)
+      .ease(d3.easeCubicOut)
+      .attr("y", (d) => y(d.count))
+      .attr("height", (d) => y(0) - y(d.count));
+
+    // Tooltip Interactivity
+    svg
+      .selectAll("rect")
+      .on("mouseover", function (e, d) {
+        d3.select(this).attr("fill", barHover);
+        tooltip
+          .style("opacity", 1)
+          .text(`${d.count} cazuri la ${d.age} ani`)
+          .style("left", e.pageX + "px")
+          .style("top", e.pageY - 28 + "px");
+      })
+      .on("mousemove", (e) => {
+        tooltip.style("left", e.pageX + "px").style("top", e.pageY - 28 + "px");
+      })
+      .on("mouseout", function () {
+        d3.select(this).attr("fill", barColor);
+        tooltip.style("opacity", 0);
+      });
+
+    // Axes
+    svg
+      .append("g")
+      .attr("transform", `translate(0,${height - margins.bottom})`)
+      .call(
+        d3
+          .axisBottom(x)
+          .tickSizeOuter(0)
+          .tickFormat((d) => `${d}`)
+      )
+      .attr("color", darkMode ? "#9CA3AF" : "#4B5563")
+      .selectAll("text")
+      .style("font-size", "11px");
+
+    svg
+      .append("g")
+      .attr("transform", `translate(${margins.left},0)`)
+      .call(d3.axisLeft(y).ticks(5))
+      .call((g) => g.select(".domain").remove())
+      .attr("color", darkMode ? "#9CA3AF" : "#4B5563")
+      .selectAll("text")
+      .style("font-size", "11px");
+
+    // Axis Labels
+    svg
+      .append("text")
+      .attr("x", width / 2)
+      .attr("y", height - 10)
+      .attr("text-anchor", "middle")
+      .style("fill", darkMode ? "#9CA3AF" : "#4B5563")
+      .style("font-size", "12px")
+      .text("Ages");
+
+    svg
+      .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -height / 2)
+      .attr("y", 15)
+      .attr("text-anchor", "middle")
+      .style("fill", darkMode ? "#9CA3AF" : "#4B5563")
+      .style("font-size", "12px")
+      .text("Count");
   }, [darkMode, data]);
 
   return (
     <div
-      className={`p-4 rounded-xl border h-[260px] flex flex-col items-center justify-center
+      className={`p-6 rounded-xl h-72 flex flex-col border justify-center items-center 
         ${
           darkMode
             ? "bg-gray-800 border-gray-700 text-gray-300"
@@ -118,13 +147,13 @@ const AgeHistogram: FC<Props> = ({ darkMode, data }) => {
         }`}
     >
       <h3
-        className={`text-base font-semibold mb-2 ${
+        className={`text-base font-semibold mb-3 ${
           darkMode ? "text-indigo-400" : "text-indigo-600"
         }`}
       >
         Distribuția pe vârste
       </h3>
-      <svg ref={ref} className="w-full h-full"></svg>
+      <svg ref={ref} className="w-full h-full" />
     </div>
   );
 };

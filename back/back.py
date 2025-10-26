@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, select, Integer, String, Boolean, CHAR, Da
 from sqlalchemy.orm import Session, DeclarativeBase, Mapped, mapped_column
 from datetime import date
 from pydantic import BaseModel
+from fastapi.responses import JSONResponse
 import json
 
 # Makes objected resulted from sqlalchemy statement execution into a dictionary
@@ -97,7 +98,7 @@ async def get_transactions():
     with Session(engine) as session:
         objs = session.scalars(select(POS_LOG)).all()
         data = [model_to_dict(o) for o in objs]
-    return data
+    return JSONResponse(data)
 
 @app.get("/api/transactions/{n}")
 async def get_transactions_n(n:int):
@@ -157,8 +158,8 @@ async def get_first_N_ages():
         .order_by("age")
         )
         result = session.execute(stmt).all()
-    response = [{"age": age, "count": count} for age, count in result]
-    return response
+    response = [{"age": int(age), "count": int(count)} for age, count in result]
+    return JSONResponse(content=response)
 
 @app.get("/api/getSortedFraudulentMerchants/{n}")
 async def get_sorted_fraudulent_merchants(n:int):

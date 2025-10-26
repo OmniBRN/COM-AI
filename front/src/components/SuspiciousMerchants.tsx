@@ -6,55 +6,62 @@ interface Props {
 }
 
 interface Merchant {
-  name: string;
-  score: number;
+  merchant: string;
+  total_transactions: number;
+  fraud_count: number;
+  fraud_rate: number; // percentage (0–1)
 }
 
 const SuspiciousMerchants: FC<Props> = ({ darkMode }) => {
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [fade, setFade] = useState(false);
 
-  // 🧠 mock/dummy generator for now
-  const generateData = () =>
-    Array.from({ length: 20 }, (_, i) => ({
-      name: `Merchant ${i + 1}`,
-      score: Math.round(100 - i * 3 + Math.random() * 5),
-    }));
-
-  // ⚡  function to load/refresh data
+  // 🔁 Fetch real data
   const fetchData = async () => {
     try {
-      // For later, replace with real fetch:
-      // const res = await fetch('/api/merchants');
-      // const data = await res.json();
-      const data = generateData(); // simulate
-
-      // trigger fade animation
       setFade(true);
-      setTimeout(() => {
-        setMerchants(data);
-        setFade(false);
-      }, 300); // fade out then in
+
+      // call backend route
+      const res = await fetch("/api/getSortedFraudulentMerchants/20", {
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+
+      const result: Merchant[] = await res.json();
+
+      // Ensure numeric + sort descending by fraud_rate
+      const formatted = (Array.isArray(result) ? result : [])
+        .map((r) => ({
+          merchant: r.merchant,
+          total_transactions: +r.total_transactions || 0,
+          fraud_count: +r.fraud_count || 0,
+          fraud_rate: +r.fraud_rate || 0,
+        }))
+        .sort((a, b) => b.fraud_rate - a.fraud_rate);
+
+      setMerchants(formatted);
     } catch (err) {
-      console.error("Error updating merchants:", err);
+      console.error("Error fetching merchants:", err);
+      setMerchants([]);
+    } finally {
+      setTimeout(() => setFade(false), 300);
     }
   };
 
-  // Initial load + refresh every minute
+  // Initial fetch + refresh every 60s
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 60_000); // 1 minute
-    return () => clearInterval(interval);
+    const id = setInterval(fetchData, 60_000);
+    return () => clearInterval(id);
   }, []);
 
   return (
     <div
-      className={`p-6 rounded-xl h-72 flex flex-col border overflow-hidden
-        ${
-          darkMode
-            ? "bg-gray-800 border-gray-700 text-gray-200"
-            : "bg-white border-gray-200 text-gray-700"
-        }`}
+      className={`p-6 rounded-xl h-72 flex flex-col border overflow-hidden ${
+        darkMode
+          ? "bg-gray-800 border-gray-700 text-gray-200"
+          : "bg-white border-gray-200 text-gray-700"
+      }`}
     >
       <div className="flex items-center justify-between mb-3">
         <h3
@@ -69,63 +76,80 @@ const SuspiciousMerchants: FC<Props> = ({ darkMode }) => {
             darkMode ? "text-gray-400" : "text-gray-500"
           }`}
         >
-          updates every 60s
+          updates every 60 s
         </span>
       </div>
 
-      {/* Scroll list */}
+      {/* Scrollable list */}
       <div
         className={`flex flex-col space-y-2 overflow-y-auto pr-2 transition-opacity duration-500 ${
           fade ? "opacity-30" : "opacity-100"
         }`}
-        style={{ maxHeight: "205px" }}
+        style={{ maxHeight: "210px" }} // fits ~5 items nicely
       >
-        {merchants.map((m, index) => (
-          <div
-            key={m.name}
-            className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm
-            ${
-              darkMode
-                ? "bg-gray-700/50 hover:bg-gray-700"
-                : "bg-gray-100 hover:bg-gray-200"
-            }
-            transition-colors duration-200`}
-          >
-            {/* Rank */}
-            <span
-              className={`w-6 text-center font-bold ${
-                index === 0
-                  ? darkMode
-                    ? "text-red-400"
-                    : "text-red-600"
-                  : index < 5
-                  ? darkMode
-                    ? "text-orange-400"
-                    : "text-orange-600"
-                  : darkMode
-                  ? "text-gray-400"
-                  : "text-gray-500"
-              }`}
+        {merchants.length > 0 ? (
+          merchants.slice(0, 20).map((m, i) => (
+            <div
+              key={m.merchant + i}
+              className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${
+                darkMode
+                  ? "bg-gray-700/50 hover:bg-gray-700"
+                  : "bg-gray-100 hover:bg-gray-200"
+              } transition-colors duration-200`}
             >
-              {index + 1}
-            </span>
-
-            {/* Name */}
-            <span className="flex-1 text-left truncate font-medium ml-2">
-              {m.name}
-            </span>
-
-            {/* Severity bar */}
-            <div className="w-24 h-2 bg-gray-400/20 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-300 ${
-                  darkMode ? "bg-red-500" : "bg-red-600"
+              {/* Rank */}
+              <span
+                className={`w-6 text-center font-bold ${
+                  i === 0
+                    ? darkMode
+                      ? "text-red-400"
+                      : "text-red-600"
+                    : i < 5
+                    ? darkMode
+                      ? "text-orange-400"
+                      : "text-orange-600"
+                    : darkMode
+                    ? "text-gray-400"
+                    : "text-gray-500"
                 }`}
-                style={{ width: `${m.score}%` }}
-              />
+              >
+                {i + 1}
+              </span>
+
+              {/* Merchant name */}
+              <span className="flex-1 text-left truncate font-medium ml-2">
+                {m.merchant}
+              </span>
+
+              {/* Fraud rate bar */}
+              <div className="w-24 h-2 bg-gray-400/20 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    darkMode ? "bg-red-500" : "bg-red-600"
+                  }`}
+                  style={{ width: `${m.fraud_rate * 100}%` }}
+                />
+              </div>
+
+              {/* Fraud percentage text */}
+              <span
+                className={`ml-3 min-w-[45px] text-right font-semibold ${
+                  darkMode ? "text-red-400" : "text-red-600"
+                }`}
+              >
+                {(m.fraud_rate * 100).toFixed(1)}%
+              </span>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p
+            className={`italic text-center ${
+              darkMode ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
+            Nu există date disponibile
+          </p>
+        )}
       </div>
     </div>
   );

@@ -5,62 +5,83 @@ interface Props {
   darkMode: boolean;
 }
 
+interface FraudState {
+  state: string;
+  occurrences: number;
+}
+
 const StatCards: FC<Props> = ({ darkMode }) => {
-  const [totalTransactions, setTotalTransactions] = useState(12543);
-  const [fraudTransactions, setFraudTransactions] = useState(312);
-  const [fraudAmount, setFraudAmount] = useState(58400);
-  const [topStates, setTopStates] = useState([
-    { state: "New York", value: 320 },
-    { state: "California", value: 290 },
-    { state: "Texas", value: 240 },
-    { state: "Florida", value: 210 },
-    { state: "Illinois", value: 190 },
-  ]);
+  const [totalTransactions, setTotalTransactions] = useState(0);
+  const [fraudTransactions, setFraudTransactions] = useState(0);
+  const [cleanTransactions, setCleanTransactions] = useState(0);
+  const [fraudAmount, setFraudAmount] = useState(0);
+  const [topStates, setTopStates] = useState<FraudState[]>([]);
   const [fade, setFade] = useState(false);
 
-  // 🔁 Simulate API refresh every 60 s
-  useEffect(() => {
-    const refresh = () => {
+  const getJSON = async (url: string) => {
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error(`${url}: ${res.status}`);
+    return res.json();
+  };
+
+  const refresh = async () => {
+    try {
       setFade(true);
 
-      setTimeout(() => {
-        // dummy updated values
-        const randomFraud = Math.floor(250 + Math.random() * 100);
-        const randomTotal = Math.floor(12000 + Math.random() * 800);
-        const randomAmount = Math.floor(50000 + Math.random() * 12000);
+      const [
+        tTotal,
+        tFraud,
+        tClean,
+        tAmount,
+        tStates,
+      ] = await Promise.all([
+        getJSON("/api/numberOfTransactions"),
+        getJSON("/api/numberOfFraudulentTransactions"),
+        getJSON("/api/numberOfCleanTransactions"),
+        getJSON("/api/numberOfDollarsStolen"),
+        getJSON("/api/getFirstNMostFradulousStates/5"),
+      ]);
 
-        setFraudTransactions(randomFraud);
-        setTotalTransactions(randomTotal);
-        setFraudAmount(randomAmount);
+      // Extract values using your backend's real keys
+      setTotalTransactions(+tTotal.total_transactions || 0);
+      setFraudTransactions(+tFraud.total_fraudulent_transactions || 0);
+      setCleanTransactions(+tClean.total_clean_transactions || 0);
+      setFraudAmount(+tAmount.number_of_money_stolen || 0);
 
-        // shuffle top states slightly
-        setTopStates((prev) =>
-          prev
-            .map((s) => ({
-              ...s,
-              value: Math.max(150, s.value + Math.round(Math.random() * 40 - 20)),
-            }))
-            .sort((a, b) => b.value - a.value)
+      if (Array.isArray(tStates)) {
+        setTopStates(
+          tStates.map((s: any) => ({
+            state: s.state,
+            occurrences: +s.occurrences || 0,
+          }))
         );
+      } else {
+        setTopStates([]);
+      }
+    } catch (err) {
+      console.error("Failed to load stats:", err);
+    } finally {
+      setFade(false);
+    }
+  };
 
-        setFade(false);
-      }, 300); // short fade‑out/in delay
-    };
-
-    refresh(); // first run
+  useEffect(() => {
+    refresh();
     const id = setInterval(refresh, 60_000);
     return () => clearInterval(id);
   }, []);
 
-  const cleanTransactions = totalTransactions - fraudTransactions;
-  const fraudRatio = (fraudTransactions / totalTransactions) * 100;
-  const cardBase = `
-    p-4 rounded-xl shadow-sm border flex flex-col items-center text-center
-    transition-colors duration-300
-  `;
+  const fraudRatio =
+    totalTransactions > 0
+      ? (fraudTransactions / totalTransactions) * 100
+      : 0;
+
+  const cardBase =
+    "p-4 rounded-xl shadow-sm border flex flex-col items-center text-center transition-colors duration-300";
 
   return (
-    <section className="grid grid-cols-1 md:grid-cols-3 gap-5 transition-opacity duration-500"
+    <section
+      className="grid grid-cols-1 md:grid-cols-3 gap-5 transition-opacity duration-500"
       style={{ opacity: fade ? 0.3 : 1 }}
     >
       {/* --- CARD 1 --- */}
@@ -91,14 +112,14 @@ const StatCards: FC<Props> = ({ darkMode }) => {
                 darkMode ? "text-red-400" : "text-red-600"
               } font-semibold`}
             >
-              {fraudTransactions} fraude
+              {fraudTransactions.toLocaleString("ro-RO")} fraude
             </span>
             <span
               className={`${
                 darkMode ? "text-green-400" : "text-green-700"
               } font-semibold`}
             >
-              {cleanTransactions} curate
+              {cleanTransactions.toLocaleString("ro-RO")} curate
             </span>
           </div>
 
@@ -164,28 +185,38 @@ const StatCards: FC<Props> = ({ darkMode }) => {
         </h3>
 
         <div className="flex flex-col justify-center flex-grow w-full mt-1 space-y-1.5">
-          {topStates.map((item, i) => (
-            <div
-              key={item.state}
-              className="flex items-center justify-between px-2"
-              style={{ opacity: 1 - i * 0.18 }}
+          {topStates.length > 0 ? (
+            topStates.map((item, i) => (
+              <div
+                key={item.state}
+                className="flex items-center justify-between px-2"
+                style={{ opacity: 1 - i * 0.18 }}
+              >
+                <span
+                  className={`font-bold ${
+                    darkMode ? "text-white" : "text-gray-800"
+                  } text-base`}
+                >
+                  {item.state}
+                </span>
+                <span
+                  className={`font-semibold ${
+                    darkMode ? "text-red-400" : "text-red-600"
+                  } text-sm`}
+                >
+                  {item.occurrences.toLocaleString("ro-RO")}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p
+              className={`text-sm ${
+                darkMode ? "text-gray-400" : "text-gray-500"
+              } italic`}
             >
-              <span
-                className={`font-bold ${
-                  darkMode ? "text-white" : "text-gray-800"
-                } text-base`}
-              >
-                {item.state}
-              </span>
-              <span
-                className={`font-semibold ${
-                  darkMode ? "text-red-400" : "text-red-600"
-                } text-sm`}
-              >
-                {item.value}
-              </span>
-            </div>
-          ))}
+              Nu există date disponibile
+            </p>
+          )}
         </div>
       </div>
     </section>

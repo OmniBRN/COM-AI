@@ -24,19 +24,20 @@ const StatCards: FC<Props> = ({ darkMode }) => {
         }`}
       >
         <h3
-          className={`text-base font-semibold mb-2 ${
+          className={`text-lg font-semibold mb-2 ${
             darkMode ? "text-indigo-400" : "text-indigo-600"
           }`}
+          
         >
           Tranzacții monitorizate
         </h3>
 
-        <div className="flex flex-col items-center justify-center flex-grow space-y-2 mt-1">
+        <div className="flex flex-col items-center justify-center flex-grow space-y-2 mt-1"  style={{ fontFamily: "'JetBrains Mono', monospace" }}  >
           <p className="text-5xl font-bold leading-tight">
             {totalTransactions.toLocaleString("ro-RO")}
           </p>
 
-          <div className="flex justify-between w-full max-w-[200px] text-xs font-medium">
+          <div className="flex justify-between w-full max-w-[200px] text-sm font-medium">
             <span
               className={`${
                 darkMode ? "text-red-400" : "text-red-600"
@@ -53,9 +54,9 @@ const StatCards: FC<Props> = ({ darkMode }) => {
             </span>
           </div>
 
-          {/* Progress bar */}
+          {/* Progress bar — extended width */}
           <div
-            className={`h-1.5 w-full max-w-[220px] rounded-full overflow-hidden ${
+            className={`h-1.5 w-[260px] sm:w-[280px] rounded-full overflow-hidden ${
               darkMode ? "bg-green-700" : "bg-green-400"
             }`}
           >
@@ -67,7 +68,7 @@ const StatCards: FC<Props> = ({ darkMode }) => {
             ></div>
           </div>
         </div>
-      </div>
+      </div>    
 
       {/* --- CARD 2 --- */}
       <div
@@ -76,7 +77,7 @@ const StatCards: FC<Props> = ({ darkMode }) => {
         }`}
       >
         <h3
-          className={`text-base font-semibold mb-2 ${
+          className={`text-lg font-semibold mb-2 ${
             darkMode ? "text-indigo-400" : "text-indigo-600"
           }`}
         >
@@ -84,9 +85,9 @@ const StatCards: FC<Props> = ({ darkMode }) => {
         </h3>
 
         <div className="flex flex-col items-center justify-center flex-grow space-y-2 mt-1">
-          <p className="text-5xl font-extrabold leading-tight">$58,400</p>
+          <p className="text-5xl font-extrabold leading-tight"  style={{ fontFamily: "'JetBrains Mono', monospace" }} >$58,400</p>
           <p
-            className={`text-xs ${
+            className={`text-sm ${
               darkMode ? "text-gray-400" : "text-gray-600"
             }`}
           >
@@ -102,7 +103,7 @@ const StatCards: FC<Props> = ({ darkMode }) => {
         }`}
       >
         <h3
-          className={`text-base font-semibold mb-2 ${
+          className={`text-lg font-semibold mb-2 ${
             darkMode ? "text-indigo-400" : "text-indigo-600"
           }`}
         >

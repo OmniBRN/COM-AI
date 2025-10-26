@@ -11,7 +11,7 @@ const Header: FC<HeaderProps> = ({ darkMode, setDarkMode }) => {
       className={`fixed top-0 left-0 w-full h-14 flex items-center border-b z-10
         transition-colors duration-500 overflow-hidden
         ${darkMode ? "bg-gray-900/80 border-gray-700" : "bg-white/80 border-gray-200"}
-      `}
+      `} style={{ fontFamily: "'Orbitron' , sans-serif" }}
     >
       <div className="relative w-full h-full overflow-hidden scroll-fade">
         <div
@@ -19,6 +19,10 @@ const Header: FC<HeaderProps> = ({ darkMode, setDarkMode }) => {
             ${darkMode ? "text-white" : "text-indigo-600"}
             text-3xl font-extrabold uppercase tracking-widest select-none
           `}
+          style={{
+          fontFamily: "'Orbitron', 'Plus Jakarta Sans', ui-sans-serif",
+          letterSpacing: "0.15em",
+        }}
         >
           {[...Array(30)].map((_, i) => (
             <span key={i} className="mx-8">

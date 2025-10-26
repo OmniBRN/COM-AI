@@ -1,6 +1,6 @@
 import uuid
 from fastapi import FastAPI
-from sqlalchemy import create_engine, select, Integer, String, Boolean, CHAR, Date, Sequence, Text, Float, Uuid, func, desc
+from sqlalchemy import create_engine, select, Integer, String, Boolean, CHAR, Date, Sequence, Text, Float, Uuid, func, desc, text, extract
 from sqlalchemy.orm import Session, DeclarativeBase, Mapped, mapped_column
 from datetime import date
 from pydantic import BaseModel
@@ -72,6 +72,14 @@ async def get_transactions():
         objs = session.scalars(select(POS_LOG)).all()
         data = [model_to_dict(o) for o in objs]
     return data
+
+@app.get("/transactions/{n}")
+async def get_transactions_n(n:int):
+    with Session(engine) as session:
+        stmt = select(POS_LOG).order_by(text("ctid DESC")).limit(n) 
+        result = session.scalars(stmt).all()
+        return [model_to_dict(o) for o in result]
+
         
 @app.post("/addTransaction")
 async def add_transaction(transaction: TransactionCreate):
@@ -134,4 +142,21 @@ async def get_first_N_mostFradulousStates(n: int):
         stmt =  (select(POS_LOG.state, func.count().label("occurrences")).group_by(POS_LOG.state).order_by(desc("occurrences"))).limit(n)
         result = session.execute(stmt).all()
     response = [{"state": state, "occurrences": count} for state, count in result]
+    return response
+
+@app.get("/getFirstNAges/{n}")
+async def get_first_N_ages(n: int):
+    with Session(engine) as session:
+        stmt = (
+        select(
+            func.floor(
+                extract("year", func.age(func.current_date(), POS_LOG.dob))
+            ).label("age"),
+            func.count().label("count")
+        )
+        .group_by("age")
+        .order_by("age").limit(n)
+        )
+        result = session.execute(stmt).all()
+    response = [{"age": age, "count": count} for age, count in result]
     return response

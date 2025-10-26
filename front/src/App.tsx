@@ -5,7 +5,6 @@ import StatCards from "./components/StatCards";
 import GraphPlaceholders from "./components/GraphPlaceholders";
 import TransactionsTable from "./components/TransactionsTable";
 import Footer from "./components/Footer";
-
 const App: FC = () => {
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     return localStorage.getItem("theme") === "dark";
@@ -21,7 +20,7 @@ const App: FC = () => {
     <div
       className={`min-h-screen flex flex-col transition-colors duration-700 
         ${darkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"}
-      `} style={{fontFamily:"Space Grotesk"}}
+      `} 
     >
       <Header darkMode={darkMode} setDarkMode={setDarkMode} />
 

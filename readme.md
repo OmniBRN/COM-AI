@@ -17,10 +17,10 @@ Through this experience, we learned how to **effectively split responsibilities*
 - Frontend: React.ts, Tailwind CSS
 - Backend: FastAPI
 - Database: Postgres
-- Machine Learning: Custom-built Random Forest and Decision Tree model implemented from scratch in Python- Model: Tailor-Made with 
+- Machine Learning: Custom-built Random Forest and Decision Tree model implemented from scratch in Python
 
 ## Demo
-[PowerPoint Presentation](https://docs.google.com/presentation/d/1q93hjdsTwQEtqBz_PEQqdyfcLEb_dGuKKfc86_T5_KI/edit?slide=id.p#slide=id.p)
+[PowerPoint Presentation](https://docs.google.com/presentation/d/1BGwni6cQW8vVd0r-xUb9W33PfUdAZtoYA2iXd144rCo/edit?usp=sharing)
 
 [Video](https://youtu.be/1uiFbjDwd48)
 
